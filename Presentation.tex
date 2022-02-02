@@ -1,0 +1,387 @@
+\documentclass{beamer}
+\usepackage[german]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multimedia}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage[absolute,overlay]{textpos}
+\usepackage{smartdiagram}
+
+\usebackgroundtemplate{\includegraphics[width=\paperwidth ,height=\paperheight]{background.png}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\PP}{\mathbb{P}}
+
+\mode<presentation>{
+  \usetheme{Madrid}  
+  \usecolortheme{beaver}
+  \setbeamercovered{transparent}
+  \setbeamercolor{math text inlined}{fg=red!80!black}
+  \setbeamercolor{math text displayed}{fg=red!80!black}  
+  \setbeamercolor{normal text in math text}{fg=black}
+  \setbeamercolor{alerted text}{fg=red!80!black}   
+}
+
+\title{Deep Q-Learning}
+
+\author[Borries, George]{Janot George, Maurice Borries}
+
+\institute[HTW Berlin]{Hochschule für Technik und Wirtschaft Berlin\\
+   Studiengang Wirtschaftsmathematik (Bachelor)\\
+   Seminar}
+
+\date{02.02.2022}
+
+\begin{document}
+
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\AtBeginSection[]{
+  \begin{frame}<beamer>
+    \frametitle{Inhaltsübersicht}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+
+\begin{frame}%Inhaltsübersicht
+  \frametitle{Inhaltsübersicht}
+  \tableofcontents
+\end{frame}
+
+
+\section{Konzept}
+
+\begin{frame}
+\frametitle{Arten des Maschinen Learnings}
+\begin{tabular}{p{3.5cm}|p{3.5cm}|p{3.5cm}}
+Supervised & Unsupervised & Reinforcement \\
+\hline
+&&\\
+\includegraphics[width=3.5cm]{sup.png} \label{supervised} & \includegraphics[width=3.5cm]{unsuper.png} \label{unsupervised} & \includegraphics[width=3.5cm]{re.png} \label{reinforcement} \\
+
+\hline
+Vorhersagen treffen & Muster entdecken & Aus Fehlern selbstständig lernen
+\end{tabular}
+\end{frame}
+
+
+\begin{frame} %Was ist (Deep) Q-Learning
+\frametitle{Was ist (Deep) Q-Learning}
+\begin{itemize}
+\item Algorithmus trainiert eine KI
+\item Zuckerbrot-und-Peitschen-Prinzip
+\item KI startet ohne Daten
+\item[]
+\item[]
+\item Konzept: Daten erzeugen und Funktionen live optimieren 
+\item[]
+\item Ziel: Annäherung an optimale Lösung des Problems
+\end{itemize}
+
+\begin{textblock*}{2cm}(6.7cm,1cm)
+\includegraphics[width=4cm]{Algo.png}
+\end{textblock*}
+
+\begin{textblock*}{2cm}(9.6cm,2.3cm)
+\includegraphics[width=3cm]{AI.png}
+\end{textblock*}
+\end{frame}
+
+
+\section{Q-Learning Bestandteile}
+
+\begin{frame}%Markov-Entscheidungsprozess
+\frametitle{Markov-Entscheidungsprozess}
+Definitionen:
+\begin{itemize}
+\item Zustand der Umgebung zum Zeitpunkt $t$: $s_t$
+\item Aktion der KI (des Agenten) zum Zeitpunkt $t$: $a_t$ 
+\item Belohnung der Aktion $a_t$: $r_{t+1}$ 
+\item[]
+\item[]
+\item[]
+\item[]
+\item[]
+\item[]
+\item[]
+\item[]
+\item[]
+\end{itemize}
+
+\begin{textblock*}{2cm}(1cm,4cm)
+\begin{tabular}{c|p{1cm}|p{1cm}}
+&&\\
+\hline
+& \includegraphics[width=1cm]{AI.png} & \includegraphics[width=0.5cm]{Target.png}\\
+\hline
+&&
+\end{tabular}
+$s_t$
+\end{textblock*}
+
+\begin{textblock*}{2cm}(5cm,4cm)
+\begin{tabular}{c|p{1cm}|p{1cm}}
+&&\\
+\hline
+& \includegraphics[width=1cm]{AI.png} & \includegraphics[width=0.5cm]{Target.png}\\
+\hline
+&&
+\end{tabular}
+$a_t$
+\end{textblock*}
+
+\begin{textblock*}{2cm}(9cm,4cm)
+\begin{tabular}{c|p{1cm}|p{1cm}}
+&&\\
+\hline
+&& \includegraphics[width=1cm]{Reward.png}\\
+\hline
+&&
+\end{tabular}
+$r_{t+1}$
+\end{textblock*}
+
+\begin{textblock*}{2cm}(1cm,6.5cm)
+\begin{tabular}{c|p{1cm}|p{1cm}}
+&&\\
+\hline
+&& \includegraphics[width=1cm]{AI.png}\\
+\hline
+&&
+\end{tabular}
+$s_{t+1}$
+\end{textblock*}
+
+\begin{textblock*}{2cm}(6.4cm,4.9cm)
+\includegraphics[width=1cm]{Action.png}
+\end{textblock*}
+\end{frame}
+
+
+\begin{frame}%Exploration vs. Exploitation
+\frametitle{Exploration versus Exploitation}
+\begin{tabular}{l|l}
+Exploration & Exploitation\\
+\hline
+$\bullet$ Erkundung des Umfeldes & $\bullet$ Ausnutzung gesammelter Daten\\
+$\bullet$ zufällige Aktionen ausführen & $\bullet$ Daten überprüfen\\
+$\bullet$ neue Daten sammeln & $\bullet$ Daten aktualisieren
+\end{tabular}
+\begin{itemize}
+\item[]
+\item[]
+\end{itemize}
+Optimale Anwendung der Erkundungsrate $\epsilon$ erfordert:
+\begin{itemize}
+\item $\epsilon_{max}$ : Erkundungsrate zu Beginn\\
+\item $\epsilon_{red}$ : Reduktionswert der Erkundungsrate\\
+\item $\epsilon_{min}$ : Minimale Erkundungsrate\\
+\item[] \begin{align*}
+\epsilon = \epsilon_{min} + \frac{\epsilon_{max} - \epsilon_{min}}{e^{\epsilon_{red} \cdot Episodennummer}} \nonumber
+\end{align*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Q-Learning Episode}
+\begin{center}
+\scalebox{0.9}{
+\smartdiagramset{set color list={orange,red,pink}}
+\smartdiagram[sequence diagram]{
+{Startzustand},
+{Q-Loop},
+{Erkundung reduzieren}
+}}
+\end{center}
+Q-Loop:
+\smartdiagramset{text width=130, set color list={red,red,red,red}}
+\begin{center}
+\scalebox{0.8}{
+\smartdiagram[circular diagram:clockwise]{
+{Exploration vs. Exploitation},
+{Umgebung aktualisieren},
+{Belohnung messen},
+{Strategie aktualisieren}}}
+\end{center}
+\end{frame}
+
+\begin{frame}%Bellman-Gleichung
+\frametitle{Q-Funktionen}
+Aktionsbewertungsfunktion: (Diskontierungsfaktor $\gamma$)
+\begin{align*}
+Q(s_t,a_t) = \mathbb{E} \left[ \sum\limits_{k=0}^{\infty} \gamma^{k} r_{t+k+1} \right]
+\end{align*}
+Bellman-Gleichung:
+\begin{align*}
+Q^{*}(s_t,a_t) = \mathbb{E} \left[ r_{t+1} + \gamma \max\limits_{a'} \left[ Q_T(s_{t+1}, a') \right] \right]
+\end{align*}
+Loss-Funktion:
+\begin{align*}
+Loss &= Q^{*}(s_t,a_t) - Q_T(s_t,a_t)
+\end{align*}
+Annäherung mit Lernrate $\alpha$:
+\begin{align*}
+Q_{T(neu)}(s_t,a_t) &= (1 - \alpha) \cdot Q_T(s_t,a_t) + \alpha \left[ r_{t+1} + \gamma \max\limits_{a'} \left[ Q_T(s_{t+1}, a') \right] \right]
+\end{align*}
+\end{frame}
+
+\begin{frame}%Exploration vs. Exploitation
+\frametitle{Q-Tabelle}
+\begin{textblock*}{2cm}(0.5cm,1.3cm)
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+&&&&&&\\
+& \includegraphics[width=1.4cm]{p1.png} & \includegraphics[width=1.4cm]{p2.png} & \includegraphics[width=1.4cm]{p3.png} & \includegraphics[width=1.4cm]{p4.png} & \includegraphics[width=1.4cm]{p5.png} & \includegraphics[width=1.4cm]{p6.png} \\
+\hline
+&&&&&&\\
+{\huge $\Uparrow$} & 0,23 & 0,34 & 1 & -0,24 & -0,39 & 0\\
+&&&&&&\\
+\hline
+&&&&&&\\
+{\huge $\Downarrow$} & -0,52 & -0,49 & -0,32 & -0,05 & -0,03 & 0\\
+&&&&&&\\
+\hline
+&&&&&&\\
+{\huge $\Rightarrow$} & 0,24 & 0,45 & -0,38 & 0,55 & 1 & 0\\
+&&&&&&\\
+\hline
+&&&&&&\\
+{\huge $\Leftarrow$} & -0,59 & -0,15 & -0,15 & -0,34 & -0,03 & 0\\
+&&&&&&\\
+\hline
+\end{tabular}
+\end{textblock*}
+\end{frame}
+
+\begin{frame}
+\frametitle{Beispiele}
+\end{frame}
+
+\begin{frame}
+\frametitle{Grenzen des Q-learning}
+\begin{itemize}
+\item Komplexität des Problems
+\item Trainingsgeschwindigkeit
+\item Größe der Q-Tabelle
+\end{itemize}
+\end{frame}
+
+
+\section{Erweiterung zum Deep-Q-Learning}
+\begin{frame}
+\frametitle{Änderungen}
+\begin{itemize}
+\item Q-Tabelle durch neuronales Netzwerk
+\item Ergänze Erinnerungsspeicher 
+\end{itemize}
+\begin{center}
+\includegraphics[width=7cm]{dvsdq.png}
+\end{center}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Deep-Q-Learning Episode}
+\begin{center}
+\scalebox{0.9}{
+\smartdiagramset{set color list={orange,red,pink}}
+\smartdiagram[sequence diagram]{
+{Startzustand},
+{DQ-Loop},
+{Erkundung reduzieren}
+}}
+\end{center}
+DQ-Loop:
+\smartdiagramset{text width=130, set color list={red,red,red,red}}
+\begin{center}
+\scalebox{0.8}{
+\smartdiagram[circular diagram:clockwise]{
+{Exploration vs. Exploitation},
+{Umgebung aktualisieren},
+{Belohnung messen},
+{Netzwerk trainieren}}}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Deep-Q-Learning Arten}
+\begin{table}
+\centering
+\begin{tabular}{p{2.2cm}|p{2.6cm}|p{2.6cm}|p{2.6cm}}
+& Deep-Q-Learning (DQL) & Double Deep-Q-Learning (DDQL) & Clipped Deep-Q-Learning (CDQL)\\
+\hline
+Strategie-Netzwerk & \begin{tabular}[c]{@{}l@{}}Exploitation\\$Q(s_t,a_t)$\\$\max \left[ Q(s_{t+1},a')\right]$\end{tabular} & \begin{tabular}[c]{@{}l@{}}Exploitation\\$Q(s_t,a_t)$\end{tabular}         & \begin{tabular}[c]{@{}l@{}}Exploitation\\$Q(s_t,a_t)$\\$\max \left[ Q(s_{t+1},a')\right]$\end{tabular}  \\
+\hline
+&&&\\
+Target-Netzwerk  & & $\max \left[ Q(s_{t+1},a')\right]$ & $\max \left[ Q(s_{t+1},a')\right]$ \\
+\end{tabular}
+\end{table}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Beispiele}
+\end{frame}
+
+\begin{frame}
+\frametitle{Fazit}
+\begin{itemize}
+\item Q-Learning für einfache Probleme
+\item Deep-Q-Learning für komplexe und Optimierungsprobleme und nicht stetige Umgebungen
+\item wird in Zukunft eine noch größere Rolle spielen
+\end{itemize}
+\end{frame}
+
+\section{Abbildungs- und Quellenverzeichnis}
+
+
+\begin{frame}%Abbildungsverzeichnis
+\frametitle{Abbildungsverzeichnis}
+\begin{itemize}
+\item Algorithmus: \alert{https://www.allaboutlean.com/employee-motivation-1/carrot-and-stick/}; Zuletzt aufgerufen: 23.11.2021
+\item KI (Esel): \alert{https://de.cleanpng.com/png-b1ndvx/}; Zuletzt aufgerufen: 22.11.2021
+\item Hintergrund: \alert{https://it-talents.de/it-wissen/machine-learning-accuracy-und-precision/}; Zuletzt aufgerufen: 7.11.2021
+\item reinforcement \alert{https://www.kdnuggets.com/2019/10/mathworks-reinforcement-learning.html}; Zuletzt aufgerufen: 30.1.2022
+\item unsupervised \alert{https://www.researchgate.net/figure/Supervised-learning-and-unsupervised-learning-Supervised-learning-uses-annotation$\_$fig1$\_$329533120} ; Zuletzt aufgerufen: 30.1.2022
+\item supervised \alert{https://www.analyticsvidhya.com/blog/2019/04/introduction-deep-q-learning-python/} ; Zuletzt aufgerufen: 30.1.2022
+\end{itemize}
+\end{frame}
+
+
+
+
+
+
+\begin{frame}%Quellenverzeichnis
+\frametitle{Quellenverzeichnis}
+\begin{itemize}
+\item Richter, S. (2019) Statistisches und maschinelles Lernen, Berlin, Springer.
+\item K.-L. Du and M. N. S. Swamy, Neural Networks and Statistical Learning.
+\item Ilyas, Agakishiev: METIS: Reinforcement Learning, Humboldt-Universität zu Berlin, \alert{IRTG1792.HU-Berlin.de}
+\item \alert{https://www.learndatasci.com/tutorials/reinforcement-q-learning-scratch-python-openai-gym/} , Satwik Kansal, Brendan Martin, zuletzt abgerufen: 7.12.2021
+\item \alert{https://ichi.pro/de/einfuhrung-in-das-reinforcement-learning-markov-entscheidungsprozess-75613770348762} ,ICHI.PRO, Laurenz Wuttke, zuletzt abgerufen: 7.12.2021
+\item \alert{https://hci.iwr.uni-heidelberg.de/system/files/private/downloads/541645681/ dammann-reinfocement-learning-report.pdf} ,Patrick Dammann, zuletzt abgerufen: 7.12.2021
+\end{itemize}
+\end{frame}
+
+\begin{frame}%Quellenverzeichnis
+\frametitle{Quellenverzeichnis}
+\begin{itemize}
+\item \alert{http://www.informatik.uni-ulm.de/ni/Lehre/SS05/RL/vorlesung/rl03.pdf} , F. Schwenker, zuletzt abgerufen: 7.12.2021
+\item \alert{https://deeplizard.com/} , Chris and Mandy, zuletzt abgerufen: 7.12.2021
+\item \alert{https://datasolut.com/neuronale-netzwerke-einfuehrung/} ,Laurenz Wuttke, zuletzt abgerufen: 7.12.2021
+\item \alert{https://www.samyzaf.com/ML/rl/qmaze.html} , zuletzt abgerufen: 7.12.2021
+\item \alert {https://www-aitude-com.translate.goog/supervised-vs-unsupervised-vs-reinforcement/?$\_$x$\_$tr$\_$sl=en$\& \_$x$\_$tr$\_$tl=de$\& \_$x$\_$tr$\_$hl=de$\& \_$x$\_$tr$\_$pto\\=op,sc} ; zuletzt abgerufen: 27.1.2022
+\item \alert {https://www.trendreport.de/anwendung-des-machine-learning-bei-der-analyse-von-kapitalmaerkten/}, Tobias Waning, Alexander Brun, Hendrik von der Haar, zuletzt abgerufen: 27.1.2022
+\end{itemize}
+\end{frame}
+
+\end{document}
